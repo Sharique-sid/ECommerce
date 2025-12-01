@@ -1,0 +1,18 @@
+# Backend .gitignore
+target/
+*.class
+*.jar
+*.war
+*.ear
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+*.iws
+*.ipr
+.DS_Store
+*.log
+node_modules/
+dist/
+build/

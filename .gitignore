@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/build/
+
+# Build files
+backend/target/
+backend/.mvn/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Spring Boot
+backend/.springBeans
+backend/application-local.properties
+
+# Maven
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Coverage
+coverage/
+*.lcov
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+

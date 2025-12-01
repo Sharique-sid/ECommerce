@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ChatGPT-like Theme Variables */
+:root {
+  --bg-primary: #212121;
+  --bg-secondary: #2f2f2f;
+  --bg-tertiary: #3a3a3a;
+  --bg-hover: #424242;
+  --text-primary: #ececec;
+  --text-secondary: #b4b4b4;
+  --text-muted: #8e8e8e;
+  --border-color: #424242;
+  --accent-color: #10a37f;
+  --accent-hover: #0d8c6d;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+  --success-color: #10b981;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Custom Scrollbar - ChatGPT style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-hover);
+}
+
+/* Page transition animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Buttons - ChatGPT style */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 cursor-pointer;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+  @apply btn hover:opacity-90 shadow-sm;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  @apply btn hover:opacity-90;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
+
+.btn-outline {
+  @apply btn border border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500;
+}
+
+/* Cards - ChatGPT style */
+.card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  @apply rounded-xl p-4 transition-all duration-200;
+}
+
+.card:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Input Fields - ChatGPT style */
+.input-field {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  @apply w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all;
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+/* Product Card */
+.product-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  @apply rounded-xl overflow-hidden transition-all duration-300 cursor-pointer;
+}
+
+.product-card:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--text-muted);
+  @apply transform -translate-y-1;
+}
+
+/* Badge Styles */
+.badge {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.badge-success {
+  @apply badge bg-emerald-500/20 text-emerald-400;
+}
+
+.badge-warning {
+  @apply badge bg-yellow-500/20 text-yellow-400;
+}
+
+.badge-danger {
+  @apply badge bg-red-500/20 text-red-400;
+}
+
+/* Skeleton Loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Star Rating */
+.star-filled {
+  @apply text-yellow-400;
+}
+
+.star-empty {
+  @apply text-gray-600;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Glass effect for special elements */
+.glass {
+  background: rgba(47, 47, 47, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+}
+
+/* Accent gradient */
+.accent-gradient {
+  background: linear-gradient(135deg, #10a37f 0%, #1a7f64 100%);
+}
+
+/* Selection color */
+::selection {
+  background-color: var(--accent-color);
+  color: white;
+}
