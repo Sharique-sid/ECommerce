@@ -1,18 +1,21 @@
 package com.ecommerce.service;
 
-import com.ecommerce.entity.Order;
-import com.ecommerce.entity.OrderItem;
-import com.ecommerce.entity.Product;
-import com.ecommerce.entity.OrderStatus;
-import com.ecommerce.repository.OrderRepository;
-import com.ecommerce.repository.OrderItemRepository;
-import com.ecommerce.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+
+import com.ecommerce.entity.Order;
+import com.ecommerce.entity.OrderItem;
+import com.ecommerce.entity.OrderStatus;
+import com.ecommerce.entity.Product;
+import com.ecommerce.repository.OrderItemRepository;
+import com.ecommerce.repository.OrderRepository;
+import com.ecommerce.repository.ProductRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,10 @@ public class OrderService {
     public Order getOrderById(Long orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+
+    public Order getOrderByOrderNumber(String orderNumber) {
+        return orderRepository.findByOrderNumber(orderNumber).orElse(null);
     }
 
     public Order updateOrderStatus(Long orderId, OrderStatus status) {

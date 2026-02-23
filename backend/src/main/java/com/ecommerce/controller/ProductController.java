@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ecommerce.dto.ProductDTO;
+import com.ecommerce.security.AuthenticatedUserProvider;
 import com.ecommerce.service.ProductService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class ProductController {
     private final ProductService productService;
+    private final AuthenticatedUserProvider authProvider;
 
     @GetMapping
     public ResponseEntity<List<ProductDTO>> getAllProducts() {
@@ -70,11 +72,9 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ProductDTO> createProduct(
-            @RequestBody ProductDTO productDTO,
-            @RequestParam(required = false) Long userId) {
-        // userId is required for authorization check
-        // If userId is provided and user is seller, set it as sellerId
+    public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO productDTO) {
+        // Get userId from JWT token instead of query param
+        Long userId = authProvider.getCurrentUserId();
         if (userId != null && productDTO.getSellerId() == null) {
             productDTO.setSellerId(userId);
         }
@@ -84,53 +84,45 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<ProductDTO> updateProduct(
             @PathVariable Long id,
-            @RequestBody ProductDTO productDTO,
-            @RequestParam(required = false) Long userId) {
-        // Check authorization: seller can only update their own products
+            @RequestBody ProductDTO productDTO) {
+        // Get userId from JWT token instead of query param
+        Long userId = authProvider.getCurrentUserId();
         return ResponseEntity.ok(productService.updateProduct(id, productDTO, userId));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(
-            @PathVariable Long id,
-            @RequestParam(required = false) Long userId) {
-        // Check authorization: seller can only delete their own products
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        // Get userId from JWT token instead of query param
+        Long userId = authProvider.getCurrentUserId();
         productService.deleteProduct(id, userId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/seller/{sellerId}")
-    public ResponseEntity<List<ProductDTO>> getSellerProducts(
-            @PathVariable Long sellerId,
-            @RequestParam(required = false) Long userId) {
-        // Authorization: sellers can only view their own products, admins can view any
-        // seller's products
+    public ResponseEntity<List<ProductDTO>> getSellerProducts(@PathVariable Long sellerId) {
+        // Get userId from JWT token for authorization
+        Long userId = authProvider.getCurrentUserId();
         return ResponseEntity.ok(productService.getSellerProducts(sellerId, userId));
     }
 
     @GetMapping("/pending")
-    public ResponseEntity<List<ProductDTO>> getPendingProducts(
-            @RequestParam(required = false) Long userId) {
-        // Only ADMIN can see pending products
-        if (userId != null) {
-            return ResponseEntity.ok(productService.getPendingProducts(userId));
-        }
-        return ResponseEntity.ok(productService.getPendingProducts(null));
+    public ResponseEntity<List<ProductDTO>> getPendingProducts() {
+        // Get userId from JWT token - only ADMIN can see pending products
+        Long userId = authProvider.getCurrentUserId();
+        return ResponseEntity.ok(productService.getPendingProducts(userId));
     }
 
     @PutMapping("/{id}/approve")
-    public ResponseEntity<ProductDTO> approveProduct(
-            @PathVariable Long id,
-            @RequestParam Long adminId) {
-        // Only ADMIN can approve products
+    public ResponseEntity<ProductDTO> approveProduct(@PathVariable Long id) {
+        // Get adminId from JWT token instead of query param
+        Long adminId = authProvider.getCurrentUserId();
         return ResponseEntity.ok(productService.approveProduct(id, adminId));
     }
 
     @PutMapping("/{id}/reject")
-    public ResponseEntity<ProductDTO> rejectProduct(
-            @PathVariable Long id,
-            @RequestParam Long adminId) {
-        // Only ADMIN can reject products
+    public ResponseEntity<ProductDTO> rejectProduct(@PathVariable Long id) {
+        // Get adminId from JWT token instead of query param
+        Long adminId = authProvider.getCurrentUserId();
         return ResponseEntity.ok(productService.rejectProduct(id, adminId));
     }
 }

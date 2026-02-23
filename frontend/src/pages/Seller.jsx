@@ -68,9 +68,9 @@ export default function Seller() {
         businessAddress: formData.businessAddress || null
       };
       console.log('Application data:', applicationData);
-      console.log('API URL will be:', `http://localhost:8081/api/seller-applications?userId=${userId}`);
+      console.log('API URL will be:', `http://localhost:8081/api/seller-applications`);
       
-      const response = await sellerApplicationApi.createApplication(userId, applicationData);
+      const response = await sellerApplicationApi.createApplication(applicationData);
       console.log('Application response:', response);
       toast.success('Application submitted successfully! Admin will review it soon.');
       setSubmitted(true);

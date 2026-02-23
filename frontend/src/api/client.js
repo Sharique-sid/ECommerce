@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add token to headers if it exists
+// Add token to headers if it exists - userId is extracted from JWT on server
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Product API calls
+// Product API calls - userId extracted from JWT token on server
 export const productApi = {
   getAllProducts: () => api.get('/products'),
   getProductById: (id) => api.get(`/products/${id}`),
@@ -27,10 +27,10 @@ export const productApi = {
   getSearchSuggestions: (keyword) => api.get('/products/search/suggestions', { params: { keyword } }),
   getTopRatedProducts: () => api.get('/products/trending/top-rated'),
   getRecommendedProducts: (userId) => api.get(`/products/recommendations/${userId}`),
-  createProduct: (data, userId) => api.post('/products', data, { params: userId ? { userId } : {} }),
-  updateProduct: (id, data, userId) => api.put(`/products/${id}`, data, { params: userId ? { userId } : {} }),
-  deleteProduct: (id, userId) => api.delete(`/products/${id}`, { params: userId ? { userId } : {} }),
-  getSellerProducts: (sellerId, userId) => api.get(`/products/seller/${sellerId}`, { params: userId ? { userId } : {} }),
+  createProduct: (data) => api.post('/products', data),
+  updateProduct: (id, data) => api.put(`/products/${id}`, data),
+  deleteProduct: (id) => api.delete(`/products/${id}`),
+  getSellerProducts: (sellerId) => api.get(`/products/seller/${sellerId}`),
 };
 
 // Auth API calls
@@ -41,20 +41,32 @@ export const authApi = {
   resetPassword: (token, newPassword) => api.post('/auth/reset-password', null, { params: { token, newPassword } }),
 };
 
-// Seller Application API calls
+// Seller Application API calls - userId/adminId extracted from JWT on server
 export const sellerApplicationApi = {
-  createApplication: (userId, data) => api.post('/seller-applications', data, { params: { userId } }),
+  createApplication: (data) => api.post('/seller-applications', data),
   getAllApplications: () => api.get('/seller-applications'),
   getPendingApplications: () => api.get('/seller-applications/pending'),
-  approveApplication: (id, adminId, notes) => api.put(`/seller-applications/${id}/approve`, null, { params: { adminId, notes } }),
-  rejectApplication: (id, adminId, notes) => api.put(`/seller-applications/${id}/reject`, null, { params: { adminId, notes } }),
+  approveApplication: (id, notes) => api.put(`/seller-applications/${id}/approve`, null, { params: notes ? { notes } : {} }),
+  rejectApplication: (id, notes) => api.put(`/seller-applications/${id}/reject`, null, { params: notes ? { notes } : {} }),
 };
 
-// Product Approval API calls (Admin only)
+// Product Approval API calls (Admin only) - adminId extracted from JWT on server
 export const productApprovalApi = {
-  getPendingProducts: (userId) => api.get('/products/pending', { params: userId ? { userId } : {} }),
-  approveProduct: (id, adminId) => api.put(`/products/${id}/approve`, null, { params: { adminId } }),
-  rejectProduct: (id, adminId) => api.put(`/products/${id}/reject`, null, { params: { adminId } }),
+  getPendingProducts: () => api.get('/products/pending'),
+  approveProduct: (id) => api.put(`/products/${id}/approve`),
+  rejectProduct: (id) => api.put(`/products/${id}/reject`),
+};
+
+// Order API calls - NEW
+export const orderApi = {
+  createOrder: (orderData) => api.post('/orders', orderData),
+  getMyOrders: () => api.get('/orders'),
+  getOrderById: (id) => api.get(`/orders/${id}`),
+  getUserOrders: (userId) => api.get(`/orders/user/${userId}`),
+  updateOrderStatus: (id, status) => api.put(`/orders/${id}/status`, null, { params: { status } }),
+  addItemToOrder: (orderId, productId, quantity) => api.post(`/orders/${orderId}/items`, null, { params: { productId, quantity } }),
+  removeItemFromOrder: (orderItemId) => api.delete(`/orders/items/${orderItemId}`),
+  trackOrder: (orderNumber) => api.get(`/orders/track/${orderNumber}`),
 };
 
 export default api;

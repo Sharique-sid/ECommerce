@@ -16,3 +16,11 @@ target/
 node_modules/
 dist/
 build/
+
+# Environment files with secrets - NEVER commit these!
+.env
+.env.local
+.env.*.local
+
+# Keep the example file
+!.env.example

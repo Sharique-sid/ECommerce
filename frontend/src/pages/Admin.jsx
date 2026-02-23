@@ -52,7 +52,7 @@ export default function Admin() {
 
   const fetchPendingProducts = async () => {
     try {
-      const response = await productApprovalApi.getPendingProducts(user.id);
+      const response = await productApprovalApi.getPendingProducts();
       setPendingProducts(response.data);
     } catch (error) {
       console.error('Error fetching pending products:', error);
@@ -70,7 +70,7 @@ export default function Admin() {
 
   const handleApproveProduct = async (productId) => {
     try {
-      await productApprovalApi.approveProduct(productId, user.id);
+      await productApprovalApi.approveProduct(productId);
       toast.success('Product approved successfully!');
       fetchPendingProducts();
       fetchProducts();
@@ -83,7 +83,7 @@ export default function Admin() {
   const handleRejectProduct = async (productId) => {
     if (!window.confirm('Are you sure you want to reject this product?')) return;
     try {
-      await productApprovalApi.rejectProduct(productId, user.id);
+      await productApprovalApi.rejectProduct(productId);
       toast.success('Product rejected');
       fetchPendingProducts();
     } catch (error) {
@@ -94,7 +94,7 @@ export default function Admin() {
 
   const handleApproveSeller = async (applicationId) => {
     try {
-      await sellerApplicationApi.approveApplication(applicationId, user.id, 'Application approved');
+      await sellerApplicationApi.approveApplication(applicationId, 'Application approved');
       toast.success('Seller application approved!');
       fetchSellerApplications();
     } catch (error) {
@@ -107,7 +107,7 @@ export default function Admin() {
     const notes = window.prompt('Enter rejection reason (optional):');
     if (notes === null) return; // User cancelled
     try {
-      await sellerApplicationApi.rejectApplication(applicationId, user.id, notes || 'Application rejected');
+      await sellerApplicationApi.rejectApplication(applicationId, notes || 'Application rejected');
       toast.success('Seller application rejected');
       fetchSellerApplications();
     } catch (error) {
@@ -188,8 +188,8 @@ export default function Admin() {
   const fetchSellerProducts = async () => {
     setLoading(true);
     try {
-      // Always send userId for authorization check
-      const response = await productApi.getSellerProducts(user.id, user.id);
+      // userId extracted from JWT token on server
+      const response = await productApi.getSellerProducts(user.id);
       setProducts(response.data);
     } catch (error) {
       errorToast('Failed to fetch your products', error);
@@ -239,12 +239,12 @@ export default function Admin() {
 
     try {
       if (editingProduct) {
-        // Always send userId for authorization check
-        await productApi.updateProduct(editingProduct.id, productData, user.id);
+        // userId extracted from JWT token on server
+        await productApi.updateProduct(editingProduct.id, productData);
         toast.success('Product updated successfully!');
       } else {
-        // Always send userId for authorization check
-        await productApi.createProduct(productData, user.id);
+        // userId extracted from JWT token on server
+        await productApi.createProduct(productData);
         toast.success(isSeller ? 'Product added successfully! It will be reviewed by admin.' : 'Product added successfully!');
       }
       if (isSeller) {
@@ -278,8 +278,8 @@ export default function Admin() {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     
     try {
-      // Always send userId for authorization check
-      await productApi.deleteProduct(id, user.id);
+      // userId extracted from JWT token on server
+      await productApi.deleteProduct(id);
       toast.success('Product deleted successfully!');
       if (isSeller) {
         fetchSellerProducts();
