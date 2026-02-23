@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import ErrorInfoButton from '../components/ErrorInfoButton';
 import { 
   FaSearch, 
   FaBox, 
@@ -82,7 +83,16 @@ export default function TrackOrder() {
                 {isLoading ? 'Tracking...' : 'Track'}
               </button>
             </div>
-            {error && <p className="text-red-400 mt-2 text-sm">{error}</p>}
+            {error && (
+              <p className="text-red-400 mt-2 text-sm flex items-center gap-1">
+                {error}
+                <ErrorInfoButton 
+                  variant="inline" 
+                  size="sm" 
+                  reason="Order ID is required to track your order. You can find your order ID in the confirmation email sent after placing your order."
+                />
+              </p>
+            )}
           </form>
         </div>
 

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGoogle, FaFacebook } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import { errorToast } from '../components/ErrorToast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -15,7 +16,9 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Please fill in all fields');
+      errorToast('Please fill in all fields', null, {
+        reason: 'Both email and password fields are required to login. Please fill in all fields and try again.'
+      });
       return;
     }
 
@@ -25,7 +28,9 @@ export default function Login() {
       toast.success('Welcome back!');
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed. Please try again.');
+      errorToast('Login failed', error, {
+        reason: error.response?.data?.message || 'Invalid email or password. Please check your credentials and try again.'
+      });
     } finally {
       setLoading(false);
     }

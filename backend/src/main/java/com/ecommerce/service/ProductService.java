@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 
 import com.ecommerce.dto.ProductDTO;
 import com.ecommerce.entity.Product;
+import com.ecommerce.entity.UserRole;
 import com.ecommerce.repository.ProductRepository;
+import com.ecommerce.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ProductService {
     private final ProductRepository productRepository;
     private final RecommendationService recommendationService;
+    private final UserRepository userRepository;
 
     public List<ProductDTO> getAllProducts() {
         // Only show approved products to customers
@@ -43,8 +46,24 @@ public class ProductService {
     }
 
     public List<ProductDTO> searchProducts(String keyword) {
-        return productRepository.findByNameContainingIgnoreCase(keyword)
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getAllProducts();
+        }
+        // Use enhanced search that searches by name, brand, description, and category
+        return productRepository.searchProducts(keyword.trim())
                 .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
+    public List<ProductDTO> getSearchSuggestions(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of();
+        }
+        // Get limited suggestions for autocomplete (max 10)
+        return productRepository.findSuggestions(keyword.trim())
+                .stream()
+                .limit(10)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -64,7 +83,20 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    public ProductDTO createProduct(ProductDTO productDTO) {
+    public ProductDTO createProduct(ProductDTO productDTO, Long userId) {
+        // Authorization check: require userId and verify user has permission
+        if (userId == null) {
+            throw new RuntimeException("User authentication required");
+        }
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Only ADMIN and SELLER can create products
+        if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.SELLER) {
+            throw new RuntimeException("You do not have permission to create products");
+        }
+
         Product product = new Product();
         product.setName(productDTO.getName());
         product.setDescription(productDTO.getDescription());
@@ -78,20 +110,50 @@ public class ProductService {
         
         // Set seller ID if provided (for seller-listed products)
         if (productDTO.getSellerId() != null) {
+            // Verify that the sellerId matches the userId (sellers can only create products for themselves)
+            if (user.getRole() == UserRole.SELLER && !productDTO.getSellerId().equals(userId)) {
+                throw new RuntimeException("Sellers can only create products for themselves");
+            }
             product.setSellerId(productDTO.getSellerId());
             product.setApprovalStatus(Product.ProductApprovalStatus.PENDING);
         } else {
             // Admin-added products are auto-approved
-            product.setApprovalStatus(Product.ProductApprovalStatus.APPROVED);
+            if (user.getRole() == UserRole.ADMIN) {
+                product.setApprovalStatus(Product.ProductApprovalStatus.APPROVED);
+            } else {
+                // If seller doesn't provide sellerId, set it automatically
+                product.setSellerId(userId);
+                product.setApprovalStatus(Product.ProductApprovalStatus.PENDING);
+            }
         }
 
         Product savedProduct = productRepository.save(product);
         return convertToDTO(savedProduct);
     }
 
-    public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
+    public ProductDTO updateProduct(Long id, ProductDTO productDTO, Long userId) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        // Authorization check: require userId for all operations
+        if (userId == null) {
+            throw new RuntimeException("User authentication required");
+        }
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Sellers can only update their own products, admins can update any product
+        if (user.getRole() == UserRole.SELLER) {
+            // Check if product belongs to this seller
+            if (product.getSellerId() == null || !product.getSellerId().equals(userId)) {
+                throw new RuntimeException("You can only update your own products");
+            }
+        } else if (user.getRole() != UserRole.ADMIN) {
+            // Only ADMIN and SELLER roles can update products
+            throw new RuntimeException("You do not have permission to update products");
+        }
+        // ADMIN can update any product, no additional check needed
 
         product.setName(productDTO.getName());
         product.setDescription(productDTO.getDescription());
@@ -105,11 +167,42 @@ public class ProductService {
         return convertToDTO(updatedProduct);
     }
 
-    public void deleteProduct(Long id) {
+    public void deleteProduct(Long id, Long userId) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        // Authorization check: require userId for all operations
+        if (userId == null) {
+            throw new RuntimeException("User authentication required");
+        }
+
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Sellers can only delete their own products, admins can delete any product
+        if (user.getRole() == UserRole.SELLER) {
+            // Check if product belongs to this seller
+            if (product.getSellerId() == null || !product.getSellerId().equals(userId)) {
+                throw new RuntimeException("You can only delete your own products");
+            }
+        } else if (user.getRole() != UserRole.ADMIN) {
+            // Only ADMIN and SELLER roles can delete products
+            throw new RuntimeException("You do not have permission to delete products");
+        }
+        // ADMIN can delete any product, no additional check needed
+
         productRepository.deleteById(id);
     }
 
-    public List<ProductDTO> getPendingProducts() {
+    public List<ProductDTO> getPendingProducts(Long userId) {
+        // Only ADMIN can see pending products
+        if (userId != null) {
+            var user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            if (user.getRole() != UserRole.ADMIN) {
+                throw new RuntimeException("Only admins can view pending products");
+            }
+        }
         return productRepository.findByApprovalStatus(Product.ProductApprovalStatus.PENDING)
                 .stream()
                 .map(this::convertToDTO)
@@ -117,6 +210,12 @@ public class ProductService {
     }
 
     public ProductDTO approveProduct(Long productId, Long adminId) {
+        // Verify admin
+        var admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        if (admin.getRole() != UserRole.ADMIN) {
+            throw new RuntimeException("Only admins can approve products");
+        }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         
@@ -129,6 +228,13 @@ public class ProductService {
     }
 
     public ProductDTO rejectProduct(Long productId, Long adminId) {
+        // Verify admin
+        var admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        if (admin.getRole() != UserRole.ADMIN) {
+            throw new RuntimeException("Only admins can reject products");
+        }
+        
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         
@@ -138,6 +244,24 @@ public class ProductService {
         
         Product saved = productRepository.save(product);
         return convertToDTO(saved);
+    }
+
+    public List<ProductDTO> getSellerProducts(Long sellerId, Long userId) {
+        // Authorization check: sellers can only view their own products, admins can view any seller's products
+        if (userId != null) {
+            var user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            if (user.getRole() == UserRole.SELLER && !sellerId.equals(userId)) {
+                throw new RuntimeException("You can only view your own products");
+            }
+            // ADMIN can view any seller's products, no additional check needed
+        }
+        
+        return productRepository.findBySellerId(sellerId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     private ProductDTO convertToDTO(Product product) {

@@ -58,10 +58,10 @@ public class SellerApplicationService {
         application.setStatus(SellerApplication.ApplicationStatus.APPROVED);
         application.setAdminNotes(notes);
 
-        // Update user role to ADMIN (or create a SELLER role if preferred)
+        // Update user role to SELLER
         User user = userRepository.findById(application.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setRole(UserRole.ADMIN); // Or create SELLER role
+        user.setRole(UserRole.SELLER);
         userRepository.save(user);
 
         SellerApplication saved = applicationRepository.save(application);

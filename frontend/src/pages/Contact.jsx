@@ -9,6 +9,7 @@ import {
   FaCheckCircle
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { errorToast } from '../components/ErrorToast';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -26,7 +27,9 @@ export default function Contact() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
-      toast.error('Please fill in all required fields');
+      errorToast('Please fill in all required fields', null, {
+        reason: 'Name, email, and message are required fields. Please fill in all required fields to send your message.'
+      });
       return;
     }
     setSubmitted(true);

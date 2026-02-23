@@ -4,6 +4,8 @@ import { FaStore, FaRocket, FaChartLine, FaHeadset, FaPercent, FaTruck, FaUsers,
 import { useAuth } from '../context/AuthContext';
 import { sellerApplicationApi } from '../api/client';
 import { toast } from 'react-toastify';
+import { errorToast } from '../components/ErrorToast';
+import ErrorInfoButton from '../components/ErrorInfoButton';
 
 export default function Seller() {
   const { user, isAuthenticated } = useAuth();
@@ -50,7 +52,9 @@ export default function Seller() {
     if (!userId) {
       console.error('User object:', user);
       console.error('User ID missing. Full user object:', JSON.stringify(user, null, 2));
-      toast.error('User ID not found. Please logout and login again to refresh your session.');
+      errorToast('User ID not found. Please logout and login again to refresh your session.', null, {
+        reason: 'Your session is missing the user ID. This can happen if you logged in before the session format was updated. Please logout and login again to refresh your session with the correct user information.'
+      });
       return;
     }
 
@@ -77,13 +81,15 @@ export default function Seller() {
       console.error('Error data:', error.response?.data);
       
       if (error.response?.status === 404) {
-        toast.error('API endpoint not found (404). Please ensure backend is running on port 8081.');
+        errorToast('API endpoint not found (404)', error, {
+          reason: 'The backend API endpoint is not found. Please ensure the backend server is running on port 8081 and the endpoint exists.'
+        });
       } else if (error.response?.status === 500) {
         const errorMsg = error.response?.data?.message || 'Server error. User may already have an application.';
-        toast.error(errorMsg);
+        errorToast(errorMsg, error);
       } else {
         const errorMsg = error.response?.data?.message || error.message || 'Failed to submit application';
-        toast.error(errorMsg);
+        errorToast(errorMsg, error);
       }
     } finally {
       setLoading(false);
@@ -179,7 +185,16 @@ export default function Seller() {
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">Business Name <span className="text-red-500">*</span></label>
               <input type="text" name="businessName" value={formData.businessName} onChange={handleChange} className="w-full px-4 py-3 bg-[#3a3a3a] border border-[#424242] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500" placeholder="Your Business Name" required />
-              {errors.businessName && <p className="text-red-400 text-xs mt-1">{errors.businessName}</p>}
+              {errors.businessName && (
+                <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                  {errors.businessName}
+                  <ErrorInfoButton 
+                    variant="inline" 
+                    size="sm" 
+                    reason="Business name is required to identify your business. Please enter your registered or trading business name."
+                  />
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">Business Type <span className="text-red-500">*</span></label>
@@ -190,7 +205,16 @@ export default function Seller() {
                 <option value="partnership">Partnership</option>
                 <option value="pvt_ltd">Private Limited</option>
               </select>
-              {errors.businessType && <p className="text-red-400 text-xs mt-1">{errors.businessType}</p>}
+              {errors.businessType && (
+                <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                  {errors.businessType}
+                  <ErrorInfoButton 
+                    variant="inline" 
+                    size="sm" 
+                    reason="Please select your business type from the dropdown. This helps us understand your business structure for tax and legal purposes."
+                  />
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">GST Number (Optional)</label>

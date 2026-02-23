@@ -24,17 +24,21 @@ export const productApi = {
   getProductById: (id) => api.get(`/products/${id}`),
   getProductsByCategory: (category) => api.get(`/products/category/${category}`),
   searchProducts: (keyword) => api.get('/products/search', { params: { keyword } }),
+  getSearchSuggestions: (keyword) => api.get('/products/search/suggestions', { params: { keyword } }),
   getTopRatedProducts: () => api.get('/products/trending/top-rated'),
   getRecommendedProducts: (userId) => api.get(`/products/recommendations/${userId}`),
-  createProduct: (data) => api.post('/products', data),
-  updateProduct: (id, data) => api.put(`/products/${id}`, data),
-  deleteProduct: (id) => api.delete(`/products/${id}`),
+  createProduct: (data, userId) => api.post('/products', data, { params: userId ? { userId } : {} }),
+  updateProduct: (id, data, userId) => api.put(`/products/${id}`, data, { params: userId ? { userId } : {} }),
+  deleteProduct: (id, userId) => api.delete(`/products/${id}`, { params: userId ? { userId } : {} }),
+  getSellerProducts: (sellerId, userId) => api.get(`/products/seller/${sellerId}`, { params: userId ? { userId } : {} }),
 };
 
 // Auth API calls
 export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (userData, password) => api.post('/auth/register', userData, { params: { password } }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', null, { params: { email } }),
+  resetPassword: (token, newPassword) => api.post('/auth/reset-password', null, { params: { token, newPassword } }),
 };
 
 // Seller Application API calls
@@ -46,9 +50,9 @@ export const sellerApplicationApi = {
   rejectApplication: (id, adminId, notes) => api.put(`/seller-applications/${id}/reject`, null, { params: { adminId, notes } }),
 };
 
-// Product Approval API calls
+// Product Approval API calls (Admin only)
 export const productApprovalApi = {
-  getPendingProducts: () => api.get('/products/pending'),
+  getPendingProducts: (userId) => api.get('/products/pending', { params: userId ? { userId } : {} }),
   approveProduct: (id, adminId) => api.put(`/products/${id}/approve`, null, { params: { adminId } }),
   rejectProduct: (id, adminId) => api.put(`/products/${id}/reject`, null, { params: { adminId } }),
 };

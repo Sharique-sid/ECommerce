@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash, FaPhone, FaGoogle, FaFacebook, FaCheck, FaTimes } from 'react-icons/fa';
 import { authApi } from '../api/client';
 import { toast } from 'react-toastify';
+import { errorToast } from '../components/ErrorToast';
+import ErrorInfoButton from '../components/ErrorInfoButton';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -61,7 +63,9 @@ export default function Register() {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.password) {
-      toast.error('Please fill in all required fields');
+      errorToast('Please fill in all required fields', null, {
+        reason: 'Name, email, and password are required fields. Please fill in all required fields to create an account.'
+      });
       return;
     }
 
@@ -69,29 +73,39 @@ export default function Register() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setEmailError('Please enter a valid email address');
-      toast.error('Invalid email format');
+        errorToast('Invalid email format', null, {
+          reason: 'Please enter a valid email address format (e.g., user@example.com).'
+        });
       return;
     }
 
     // Validate phone if provided
     if (formData.phone && !validatePhone(formData.phone)) {
       setPhoneError('Please enter a valid 10-digit phone number starting with 6-9');
-      toast.error('Invalid phone number format');
+        errorToast('Invalid phone number format', null, {
+          reason: 'Phone number must be 10 digits and start with 6, 7, 8, or 9 (e.g., 9876543210).'
+        });
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+        errorToast('Passwords do not match', null, {
+          reason: 'The password and confirm password fields must match. Please ensure both fields contain the same password.'
+        });
       return;
     }
 
     if (!passwordRules.every(rule => rule.test(formData.password))) {
-      toast.error('Password does not meet requirements');
+        errorToast('Password does not meet requirements', null, {
+          reason: 'Password must contain: at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.'
+        });
       return;
     }
 
     if (!agreeTerms) {
-      toast.error('Please agree to the terms and conditions');
+        errorToast('Please agree to the terms and conditions', null, {
+          reason: 'You must agree to the terms and conditions to create an account. Please check the agreement checkbox and try again.'
+        });
       return;
     }
 
@@ -116,12 +130,16 @@ export default function Register() {
       // Handle specific error messages
       if (errorMessage.includes('Email already exists') || errorMessage.includes('email')) {
         setEmailError('This email is already registered');
-        toast.error('Email already exists. Please use a different email or login.');
+        errorToast('Email already exists. Please use a different email or login.', error, {
+          reason: 'An account with this email address already exists. Please use a different email or login with your existing account.'
+        });
       } else if (errorMessage.includes('Phone number already registered') || errorMessage.includes('phone')) {
         setPhoneError('This phone number is already registered');
-        toast.error('Phone number already exists. Please use a different number.');
+        errorToast('Phone number already exists. Please use a different number.', error, {
+          reason: 'An account with this phone number already exists. Please use a different phone number or login with your existing account.'
+        });
       } else {
-        toast.error(errorMessage);
+        errorToast(errorMessage, error);
       }
     } finally {
       setLoading(false);
@@ -183,7 +201,18 @@ export default function Register() {
                   } rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors`}
                 />
               </div>
-              {emailError && <p className="text-red-400 text-xs mt-1">{emailError}</p>}
+              {emailError && (
+                <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                  {emailError}
+                  <ErrorInfoButton 
+                    variant="inline" 
+                    size="sm" 
+                    reason={emailError === 'This email is already registered' 
+                      ? 'An account with this email address already exists. Please use a different email or try logging in with your existing account.'
+                      : 'Please enter a valid email address format (e.g., user@example.com).'}
+                  />
+                </p>
+              )}
             </div>
 
             {/* Phone */}
@@ -205,7 +234,18 @@ export default function Register() {
                   } rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors`}
                 />
               </div>
-              {phoneError && <p className="text-red-400 text-xs mt-1">{phoneError}</p>}
+              {phoneError && (
+                <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                  {phoneError}
+                  <ErrorInfoButton 
+                    variant="inline" 
+                    size="sm" 
+                    reason={phoneError === 'This phone number is already registered'
+                      ? 'An account with this phone number already exists. Please use a different phone number or login with your existing account.'
+                      : 'Phone number must be 10 digits and start with 6, 7, 8, or 9 (e.g., 9876543210).'}
+                  />
+                </p>
+              )}
               {formData.phone && !phoneError && !validatePhone(formData.phone) && (
                 <p className="text-yellow-400 text-xs mt-1">Phone should be 10 digits starting with 6-9</p>
               )}

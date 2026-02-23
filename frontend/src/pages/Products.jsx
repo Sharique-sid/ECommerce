@@ -1,38 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { FaSearch, FaFilter, FaStar, FaShoppingCart, FaHeart, FaTimes, FaChevronDown } from 'react-icons/fa';
 import { useCart } from '../context/CartContext';
-import api from '../api/client';
+import api, { productApi } from '../api/client';
 
 export default function Products() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
   const { addToCart } = useCart();
 
-  const categories = ['All', 'Electronics', 'Fashion', 'Home', 'Books', 'Sports', 'Beauty'];
+  const categories = ['All', 'Electronics', 'Fashion', 'Home', 'Accessories'];
 
+  // Update state when URL parameters change
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    } else {
+      setSelectedCategory('All');
+    }
+    
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    } else {
+      setSearchQuery('');
+    }
+  }, [searchParams]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await api.get('/products');
-      setProducts(response.data);
+      let response;
+      // If search query exists, use backend search API
+      if (searchQuery && searchQuery.trim()) {
+        response = await productApi.searchProducts(searchQuery.trim());
+      } else {
+        // Otherwise, fetch all products or filter by category
+        if (selectedCategory && selectedCategory !== 'All') {
+          response = await productApi.getProductsByCategory(selectedCategory);
+        } else {
+          response = await productApi.getAllProducts();
+        }
+      }
+      
+      let fetchedProducts = response.data;
+      
+      // Apply category filter if category is selected and we have a search query
+      if (selectedCategory && selectedCategory !== 'All' && searchQuery && searchQuery.trim()) {
+        fetchedProducts = fetchedProducts.filter(p => p.category === selectedCategory);
+      }
+      
+      setProducts(fetchedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, selectedCategory]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filteredProducts = products
-    .filter(p => selectedCategory === 'All' || p.category === selectedCategory)
-    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
@@ -75,7 +113,17 @@ export default function Products() {
                   {categories.map(cat => (
                     <button
                       key={cat}
-                      onClick={() => setSelectedCategory(cat)}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        // Update URL parameter
+                        const newSearchParams = new URLSearchParams(searchParams);
+                        if (cat === 'All') {
+                          newSearchParams.delete('category');
+                        } else {
+                          newSearchParams.set('category', cat);
+                        }
+                        setSearchParams(newSearchParams);
+                      }}
                       className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
                         selectedCategory === cat
                           ? 'bg-emerald-500 text-white'
@@ -112,7 +160,25 @@ export default function Products() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchQuery(value);
+                  // Update URL parameter
+                  const newSearchParams = new URLSearchParams(searchParams);
+                  if (value.trim()) {
+                    newSearchParams.set('search', value);
+                  } else {
+                    newSearchParams.delete('search');
+                  }
+                  setSearchParams(newSearchParams);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    // Trigger search when Enter is pressed
+                    fetchProducts();
+                  }
+                }}
                 placeholder="Search products..."
                 className="w-full pl-12 pr-4 py-4 bg-[#2f2f2f] border border-[#424242] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
               />
@@ -138,7 +204,15 @@ export default function Products() {
             ) : filteredProducts.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-gray-400 text-lg">No products found</p>
-                <button onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }} className="mt-4 text-emerald-500 hover:text-emerald-400">
+                <button 
+                  onClick={() => { 
+                    setSearchQuery(''); 
+                    setSelectedCategory('All');
+                    // Clear URL parameters
+                    setSearchParams({});
+                  }} 
+                  className="mt-4 text-emerald-500 hover:text-emerald-400"
+                >
                   Clear filters
                 </button>
               </div>

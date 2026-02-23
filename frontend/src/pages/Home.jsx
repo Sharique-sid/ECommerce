@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  FaMobileAlt, 
-  FaLaptop, 
-  FaTshirt, 
-  FaCouch, 
+import {
+  FaMobileAlt,
+  FaLaptop,
+  FaTshirt,
+  FaCouch,
   FaGem,
   FaBaby,
   FaArrowRight,
@@ -104,9 +104,10 @@ export default function Home() {
           <span className="text-xs text-gray-500">({product.reviewCount})</span>
         </div>
         <div className="mt-2 flex items-center gap-2">
-          <span className="text-lg font-bold text-white">₹{Math.round(product.price * 83).toLocaleString()}</span>
-          <span className="text-sm text-gray-500 line-through">₹{Math.round(product.price * 83 * 1.4).toLocaleString()}</span>
-          <span className="text-sm text-emerald-500 font-medium">40% off</span>
+          <span className="text-lg font-bold text-white">₹{Number(product.price).toLocaleString()}</span>
+          {/* Mock original price for demo purposes */}
+          <span className="text-sm text-gray-500 line-through">₹{Math.round(product.price * 1.2).toLocaleString()}</span>
+          <span className="text-sm text-emerald-500 font-medium">20% off</span>
         </div>
         <p className="text-xs text-gray-500 mt-1">Free Delivery</p>
       </div>
@@ -120,9 +121,8 @@ export default function Home() {
         {banners.map((banner, index) => (
           <div
             key={banner.id}
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              index === currentBanner ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`absolute inset-0 transition-opacity duration-500 ${index === currentBanner ? 'opacity-100' : 'opacity-0'
+              }`}
           >
             <div className="h-full flex items-center">
               <div className="container flex flex-col md:flex-row items-center justify-between">
@@ -151,9 +151,8 @@ export default function Home() {
             <button
               key={index}
               onClick={() => setCurrentBanner(index)}
-              className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                index === currentBanner ? 'bg-emerald-500' : 'bg-gray-600'
-              }`}
+              className={`w-2.5 h-2.5 rounded-full transition-colors ${index === currentBanner ? 'bg-emerald-500' : 'bg-gray-600'
+                }`}
             />
           ))}
         </div>
@@ -221,8 +220,8 @@ export default function Home() {
                   />
                   <h3 className="text-sm font-medium text-gray-800 truncate">{product.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-bold text-gray-800">₹{Math.round(product.price * 83).toLocaleString()}</span>
-                    <span className="text-xs bg-red-100 text-red-600 px-1 rounded">40% OFF</span>
+                    <span className="font-bold text-gray-800">₹{Number(product.price).toLocaleString()}</span>
+                    <span className="text-xs bg-red-100 text-red-600 px-1 rounded">20% OFF</span>
                   </div>
                 </Link>
               ))

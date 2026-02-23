@@ -5,9 +5,12 @@ import {
   FaSave, FaTimes, FaSearch, FaImage, FaRupeeSign, FaLock,
   FaCheckCircle, FaTimesCircle, FaStore, FaClipboardList
 } from 'react-icons/fa';
-import api, { sellerApplicationApi, productApprovalApi } from '../api/client';
+import api, { sellerApplicationApi, productApprovalApi, productApi } from '../api/client';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import ErrorInfoButton from '../components/ErrorInfoButton';
+import { errorToast } from '../components/ErrorToast';
+import { getAuthorizationErrorReason } from '../utils/errorUtils';
 
 export default function Admin() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -36,16 +39,20 @@ export default function Admin() {
   const categories = ['Electronics', 'Fashion', 'Home', 'Accessories', 'Sports', 'Beauty', 'Books'];
 
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'ADMIN') {
-      fetchProducts();
-      fetchPendingProducts();
-      fetchSellerApplications();
+    if (isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'SELLER')) {
+      if (user?.role === 'ADMIN') {
+        fetchProducts();
+        fetchPendingProducts();
+        fetchSellerApplications();
+      } else if (user?.role === 'SELLER') {
+        fetchSellerProducts();
+      }
     }
   }, [isAuthenticated, user]);
 
   const fetchPendingProducts = async () => {
     try {
-      const response = await productApprovalApi.getPendingProducts();
+      const response = await productApprovalApi.getPendingProducts(user.id);
       setPendingProducts(response.data);
     } catch (error) {
       console.error('Error fetching pending products:', error);
@@ -68,7 +75,8 @@ export default function Admin() {
       fetchPendingProducts();
       fetchProducts();
     } catch (error) {
-      toast.error('Failed to approve product');
+      const reason = error.response?.data?.message || getAuthorizationErrorReason(user?.role, 'ADMIN', 'approve products');
+      errorToast('Failed to approve product', error, { reason });
     }
   };
 
@@ -79,7 +87,8 @@ export default function Admin() {
       toast.success('Product rejected');
       fetchPendingProducts();
     } catch (error) {
-      toast.error('Failed to reject product');
+      const reason = error.response?.data?.message || getAuthorizationErrorReason(user?.role, 'ADMIN', 'reject products');
+      errorToast('Failed to reject product', error, { reason });
     }
   };
 
@@ -89,7 +98,8 @@ export default function Admin() {
       toast.success('Seller application approved!');
       fetchSellerApplications();
     } catch (error) {
-      toast.error('Failed to approve application');
+      const reason = error.response?.data?.message || getAuthorizationErrorReason(user?.role, 'ADMIN', 'approve seller applications');
+      errorToast('Failed to approve application', error, { reason });
     }
   };
 
@@ -101,7 +111,8 @@ export default function Admin() {
       toast.success('Seller application rejected');
       fetchSellerApplications();
     } catch (error) {
-      toast.error('Failed to reject application');
+      const reason = error.response?.data?.message || getAuthorizationErrorReason(user?.role, 'ADMIN', 'reject seller applications');
+      errorToast('Failed to reject application', error, { reason });
     }
   };
 
@@ -122,15 +133,20 @@ export default function Admin() {
     return <Navigate to="/login" replace />;
   }
 
-  // Show access denied if not admin
-  if (user?.role !== 'ADMIN') {
+  // Show access denied if not admin or seller
+  if (user?.role !== 'ADMIN' && user?.role !== 'SELLER') {
+    const errorReason = `Your current role is "${user?.role || 'CUSTOMER'}". The Admin Panel requires Administrator (ADMIN) or Seller (SELLER) privileges. Customer accounts can browse and purchase products but cannot access administrative functions.`;
+    
     return (
       <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
         <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-8 max-w-md text-center">
           <FaLock className="text-5xl text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-white mb-4 flex items-center justify-center gap-2">
+            Access Denied
+            <ErrorInfoButton reason={errorReason} size="md" />
+          </h1>
           <p className="text-gray-400 mb-2">
-            You need <span className="text-emerald-400 font-semibold">Administrator</span> privileges to access this page.
+            You need <span className="text-emerald-400 font-semibold">Administrator</span> or <span className="text-emerald-400 font-semibold">Seller</span> privileges to access this page.
           </p>
           <p className="text-sm text-gray-500 mb-6">
             Your current role: <span className="text-yellow-400">{user?.role || 'None'}</span>
@@ -154,13 +170,29 @@ export default function Admin() {
     );
   }
 
+  const isAdmin = user?.role === 'ADMIN';
+  const isSeller = user?.role === 'SELLER';
+
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const response = await api.get('/products');
       setProducts(response.data);
     } catch (error) {
-      toast.error('Failed to fetch products');
+      errorToast('Failed to fetch products', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSellerProducts = async () => {
+    setLoading(true);
+    try {
+      // Always send userId for authorization check
+      const response = await productApi.getSellerProducts(user.id, user.id);
+      setProducts(response.data);
+    } catch (error) {
+      errorToast('Failed to fetch your products', error);
     } finally {
       setLoading(false);
     }
@@ -191,7 +223,9 @@ export default function Admin() {
     e.preventDefault();
     
     if (!productForm.name || !productForm.price || !productForm.quantity) {
-      toast.error('Please fill in required fields');
+      errorToast('Please fill in required fields', null, { 
+        reason: 'Required fields are missing. Please ensure all required fields (name, price, quantity) are filled in.' 
+      });
       return;
     }
 
@@ -205,16 +239,22 @@ export default function Admin() {
 
     try {
       if (editingProduct) {
-        await api.put(`/products/${editingProduct.id}`, productData);
+        // Always send userId for authorization check
+        await productApi.updateProduct(editingProduct.id, productData, user.id);
         toast.success('Product updated successfully!');
       } else {
-        await api.post('/products', productData);
-        toast.success('Product added successfully!');
+        // Always send userId for authorization check
+        await productApi.createProduct(productData, user.id);
+        toast.success(isSeller ? 'Product added successfully! It will be reviewed by admin.' : 'Product added successfully!');
       }
-      fetchProducts();
+      if (isSeller) {
+        fetchSellerProducts();
+      } else {
+        fetchProducts();
+      }
       resetForm();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save product');
+      errorToast('Failed to save product', error);
     }
   };
 
@@ -238,11 +278,20 @@ export default function Admin() {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     
     try {
-      await api.delete(`/products/${id}`);
+      // Always send userId for authorization check
+      await productApi.deleteProduct(id, user.id);
       toast.success('Product deleted successfully!');
-      fetchProducts();
+      if (isSeller) {
+        fetchSellerProducts();
+      } else {
+        fetchProducts();
+      }
     } catch (error) {
-      toast.error('Failed to delete product');
+      const reason = error.response?.data?.message || 
+        (user?.role === 'SELLER' 
+          ? "You can only delete your own products. Only administrators can delete products from other sellers."
+          : "Failed to delete product. Please try again.");
+      errorToast('Failed to delete product', error, { reason });
     }
   };
 
@@ -265,8 +314,12 @@ export default function Admin() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
-            <p className="text-gray-400">Manage your products and view statistics</p>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {isAdmin ? 'Admin Panel' : 'Seller Dashboard'}
+            </h1>
+            <p className="text-gray-400">
+              {isAdmin ? 'Manage products, approvals, and view statistics' : 'Manage your products and track their status'}
+            </p>
           </div>
           <button
             onClick={() => { resetForm(); setShowAddForm(true); }}
@@ -277,7 +330,7 @@ export default function Admin() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className={`grid grid-cols-2 ${isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-3'} gap-4 mb-8`}>
           <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
@@ -285,65 +338,99 @@ export default function Admin() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{stats.totalProducts}</p>
-                <p className="text-sm text-gray-400">Total Products</p>
+                <p className="text-sm text-gray-400">{isSeller ? 'My Products' : 'Total Products'}</p>
               </div>
             </div>
           </div>
-          <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                <FaClipboardList className="text-yellow-500" />
+          {isSeller && (
+            <>
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <FaClipboardList className="text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">
+                      {products.filter(p => p.approvalStatus === 'PENDING').length}
+                    </p>
+                    <p className="text-sm text-gray-400">Pending Approval</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{pendingProducts.length}</p>
-                <p className="text-sm text-gray-400">Pending Products</p>
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <FaCheckCircle className="text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">
+                      {products.filter(p => p.approvalStatus === 'APPROVED').length}
+                    </p>
+                    <p className="text-sm text-gray-400">Approved</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <FaStore className="text-purple-500" />
+            </>
+          )}
+          {isAdmin && (
+            <>
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <FaClipboardList className="text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{pendingProducts.length}</p>
+                    <p className="text-sm text-gray-400">Pending Products</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{sellerApplications.length}</p>
-                <p className="text-sm text-gray-400">Seller Applications</p>
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <FaStore className="text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{sellerApplications.length}</p>
+                    <p className="text-sm text-gray-400">Seller Applications</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <FaChartBar className="text-blue-500" />
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <FaChartBar className="text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{stats.totalCategories}</p>
+                    <p className="text-sm text-gray-400">Categories</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.totalCategories}</p>
-                <p className="text-sm text-gray-400">Categories</p>
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <FaBox className="text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{stats.lowStock}</p>
+                    <p className="text-sm text-gray-400">Low Stock</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
-                <FaBox className="text-yellow-500" />
+              <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <FaRupeeSign className="text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">₹{stats.totalValue.toLocaleString()}</p>
+                    <p className="text-sm text-gray-400">Inventory Value</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{stats.lowStock}</p>
-                <p className="text-sm text-gray-400">Low Stock</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <FaRupeeSign className="text-purple-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">₹{stats.totalValue.toLocaleString()}</p>
-                <p className="text-sm text-gray-400">Inventory Value</p>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Tabs */}
@@ -356,38 +443,42 @@ export default function Admin() {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            <FaBox className="inline mr-2" /> Products
+            <FaBox className="inline mr-2" /> {isSeller ? 'My Products' : 'Products'}
           </button>
-          <button
-            onClick={() => setActiveTab('product-approvals')}
-            className={`px-6 py-3 font-medium transition-colors relative ${
-              activeTab === 'product-approvals'
-                ? 'text-emerald-500 border-b-2 border-emerald-500'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <FaClipboardList className="inline mr-2" /> Product Approvals
-            {pendingProducts.length > 0 && (
-              <span className="ml-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {pendingProducts.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('seller-applications')}
-            className={`px-6 py-3 font-medium transition-colors relative ${
-              activeTab === 'seller-applications'
-                ? 'text-emerald-500 border-b-2 border-emerald-500'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            <FaStore className="inline mr-2" /> Seller Applications
-            {sellerApplications.length > 0 && (
-              <span className="ml-2 bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {sellerApplications.length}
-              </span>
-            )}
-          </button>
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => setActiveTab('product-approvals')}
+                className={`px-6 py-3 font-medium transition-colors relative ${
+                  activeTab === 'product-approvals'
+                    ? 'text-emerald-500 border-b-2 border-emerald-500'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <FaClipboardList className="inline mr-2" /> Product Approvals
+                {pendingProducts.length > 0 && (
+                  <span className="ml-2 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {pendingProducts.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('seller-applications')}
+                className={`px-6 py-3 font-medium transition-colors relative ${
+                  activeTab === 'seller-applications'
+                    ? 'text-emerald-500 border-b-2 border-emerald-500'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <FaStore className="inline mr-2" /> Seller Applications
+                {sellerApplications.length > 0 && (
+                  <span className="ml-2 bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {sellerApplications.length}
+                  </span>
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Add/Edit Product Modal */}

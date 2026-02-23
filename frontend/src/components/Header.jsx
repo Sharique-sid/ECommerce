@@ -15,22 +15,14 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import SearchBar from './SearchBar';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { cartCount, wishlist } = useCart();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
-      setSearchQuery('');
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -56,9 +48,11 @@ export default function Header() {
             </span>
           </div>
           <div className="hidden md:flex items-center gap-4 text-gray-400">
-            <Link to="/admin" className="hover:text-emerald-400 transition-colors flex items-center gap-1">
-              <FaCog className="text-xs" /> Admin Panel
-            </Link>
+            {(user?.role === 'ADMIN' || user?.role === 'SELLER') && (
+              <Link to="/admin" className="hover:text-emerald-400 transition-colors flex items-center gap-1">
+                <FaCog className="text-xs" /> {user?.role === 'ADMIN' ? 'Admin Panel' : 'Seller Dashboard'}
+              </Link>
+            )}
             <span className="text-gray-600">|</span>
             <Link to="/seller" className="hover:text-white transition-colors">Become a Seller</Link>
             <span className="text-gray-600">|</span>
@@ -87,24 +81,10 @@ export default function Header() {
               </div>
             </Link>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl">
-              <div className="flex w-full">
-                <input
-                  type="text"
-                  placeholder="Search for products, brands and more..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 px-4 py-2.5 bg-[#2f2f2f] border border-[#424242] border-r-0 rounded-l-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-emerald-600 text-white rounded-r-lg hover:bg-emerald-700 transition-colors"
-                >
-                  <FaSearch />
-                </button>
-              </div>
-            </form>
+            {/* Search Bar with Autocomplete */}
+            <div className="hidden md:flex flex-1 max-w-2xl">
+              <SearchBar />
+            </div>
 
             {/* Right Actions */}
             <div className="flex items-center gap-5">
@@ -151,13 +131,15 @@ export default function Header() {
                         >
                           <FaHeart /> Wishlist
                         </Link>
-                        <Link
-                          to="/admin"
-                          className="flex items-center gap-3 px-4 py-2.5 text-emerald-400 hover:bg-[#424242] hover:text-emerald-300 transition-colors"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <FaCog /> Admin Panel
-                        </Link>
+                        {(user.role === 'ADMIN' || user.role === 'SELLER') && (
+                          <Link
+                            to="/admin"
+                            className="flex items-center gap-3 px-4 py-2.5 text-emerald-400 hover:bg-[#424242] hover:text-emerald-300 transition-colors"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <FaCog /> {user.role === 'ADMIN' ? 'Admin Panel' : 'Seller Dashboard'}
+                          </Link>
+                        )}
                         <div className="border-t border-[#424242] mt-2 pt-2">
                           <button
                             onClick={handleLogout}
@@ -226,23 +208,9 @@ export default function Header() {
           </div>
 
           {/* Mobile Search */}
-          <form onSubmit={handleSearch} className="md:hidden mt-3">
-            <div className="flex">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-[#2f2f2f] border border-[#424242] border-r-0 rounded-l-lg text-white placeholder-gray-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2.5 bg-emerald-600 text-white rounded-r-lg"
-              >
-                <FaSearch />
-              </button>
-            </div>
-          </form>
+          <div className="md:hidden mt-3">
+            <SearchBar />
+          </div>
         </div>
 
         {/* Category Navigation */}

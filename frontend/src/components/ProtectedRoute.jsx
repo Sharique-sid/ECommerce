@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ErrorInfoButton from './ErrorInfoButton';
 
 export default function ProtectedRoute({ children, requireAdmin = false }) {
   const { user, isAuthenticated, loading } = useAuth();
@@ -20,13 +21,18 @@ export default function ProtectedRoute({ children, requireAdmin = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && user?.role !== 'ADMIN') {
+  if (requireAdmin && user?.role !== 'ADMIN' && user?.role !== 'SELLER') {
+    const errorReason = `Your current role is "${user?.role || 'CUSTOMER'}". This page requires Administrator or Seller privileges. Only users with ADMIN or SELLER roles can access this resource.`;
+    
     return (
       <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
         <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-8 max-w-md text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-white mb-4 flex items-center justify-center gap-2">
+            Access Denied
+            <ErrorInfoButton reason={errorReason} size="md" />
+          </h1>
           <p className="text-gray-400 mb-6">
-            You need administrator privileges to access this page.
+            You need administrator or seller privileges to access this page.
           </p>
           <a
             href="/"

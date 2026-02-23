@@ -1,93 +1,99 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaEnvelope, FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { toast } from 'react-toastify';
+import { authApi } from '../api/client';
 
-export default function ForgotPassword() {
+const ForgotPassword = () => {
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) {
-      setError('Please enter your email');
-      return;
+    setLoading(true);
+    try {
+      await authApi.forgotPassword(email);
+      setSent(true);
+      toast.success('Password reset email sent!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send email');
+    } finally {
+      setLoading(false);
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email');
-      return;
-    }
-    setError('');
-    setSubmitted(true);
   };
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-[#212121] flex items-center justify-center py-12 px-4">
-        <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FaCheckCircle className="text-4xl text-emerald-500" />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-4">Check Your Email</h1>
-          <p className="text-gray-400 mb-8">
-            We've sent a password reset link to <span className="text-white font-medium">{email}</span>
-          </p>
-          <p className="text-sm text-gray-500 mb-8">
-            Didn't receive the email? Check your spam folder or{' '}
-            <button onClick={() => setSubmitted(false)} className="text-emerald-500 hover:text-emerald-400">
-              try again
-            </button>
-          </p>
-          <Link to="/login" className="inline-block bg-emerald-500 text-white px-8 py-3 rounded-xl font-semibold hover:bg-emerald-600 transition-colors">
-            Back to Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#212121] flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full">
-        <Link to="/login" className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors">
-          <FaArrowLeft /> Back to Login
-        </Link>
+    <div className="min-h-screen bg-[#212121] text-gray-100 flex items-center justify-center relative overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[100px]" />
+      </div>
 
-        <div className="bg-[#2f2f2f] rounded-xl border border-[#424242] p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Forgot Password?</h1>
-            <p className="text-gray-400">No worries! Enter your email and we'll send you a reset link.</p>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl w-full max-w-md relative z-10 shadow-2xl"
+      >
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+            Forgot Password
+          </h2>
+          <p className="text-gray-400 mt-2">Enter your email to reset your password</p>
+        </div>
 
+        {sent ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center"
+          >
+            <div className="bg-green-500/10 text-green-400 p-4 rounded-xl border border-green-500/20 mb-6">
+              <p>Check your email for the reset link!</p>
+            </div>
+            <Link
+              to="/login"
+              className="text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              Back to Login
+            </Link>
+          </motion.div>
+        ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-2">Email Address</label>
-              <div className="relative">
-                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                  placeholder="Enter your email"
-                  className="w-full pl-12 pr-4 py-4 bg-[#3a3a3a] border border-[#424242] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-                />
-              </div>
-              {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+              <label className="block text-gray-400 mb-2 text-sm">Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-gray-500"
+                placeholder="Enter your email"
+                required
+              />
             </div>
 
-            <button type="submit" className="w-full bg-emerald-500 text-white py-4 rounded-xl font-semibold hover:bg-emerald-600 transition-colors">
-              Send Reset Link
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-medium transition-all transform hover:scale-[1.02] active:scale-[0.98] ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-lg hover:shadow-indigo-500/25'
+                }`}
+            >
+              {loading ? 'Sending...' : 'Send Reset Link'}
             </button>
-          </form>
 
-          <p className="text-center text-gray-400 mt-6">
-            Remember your password?{' '}
-            <Link to="/login" className="text-emerald-500 hover:text-emerald-400 font-medium">
-              Sign In
-            </Link>
-          </p>
-        </div>
-      </div>
+            <div className="text-center">
+              <Link
+                to="/login"
+                className="text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                Back to Login
+              </Link>
+            </div>
+          </form>
+        )}
+      </motion.div>
     </div>
   );
-}
+};
+
+export default ForgotPassword;
