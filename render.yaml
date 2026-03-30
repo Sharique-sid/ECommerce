@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: shophub-backend
+    runtime: java
+    rootDir: backend
+    buildCommand: mvn clean install -DskipTests
+    startCommand: java -jar target/ecommerce-platform-1.0.0.jar
+    envVars:
+      - key: JAVA_VERSION
+        value: 21 
