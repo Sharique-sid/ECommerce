@@ -16,13 +16,17 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import SearchBar from './SearchBar';
+import DeliveryLocationSelector from './DeliveryLocationSelector';
+import { useDeliveryLocation } from '../context/DeliveryLocationContext';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { cartCount, wishlist } = useCart();
+  const { location } = useDeliveryLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [locationSelectorOpen, setLocationSelectorOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -43,9 +47,14 @@ export default function Header() {
       <div className="bg-[#1a1a1a] border-b border-[#2f2f2f]">
         <div className="container py-2 flex justify-between items-center text-sm">
           <div className="flex items-center gap-4 text-gray-400">
-            <span className="flex items-center gap-1">
-              <FaMapMarkerAlt className="text-emerald-500" /> Deliver to: Delhi, India
-            </span>
+            <button
+              type="button"
+              onClick={() => setLocationSelectorOpen(true)}
+              className="flex items-center gap-2 rounded-md px-2 py-1 text-left hover:bg-[#262626] transition-colors"
+            >
+              <FaMapMarkerAlt className="text-emerald-500" />
+              <span>{location?.label || 'Set your location'}</span>
+            </button>
           </div>
           <div className="hidden md:flex items-center gap-4 text-gray-400">
             {(user?.role === 'ADMIN' || user?.role === 'SELLER') && (
@@ -267,6 +276,11 @@ export default function Header() {
           </div>
         </div>
       )}
+
+      <DeliveryLocationSelector
+        isOpen={locationSelectorOpen}
+        onClose={() => setLocationSelectorOpen(false)}
+      />
     </header>
   );
 }

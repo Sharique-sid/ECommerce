@@ -1,9 +1,44 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FaCheckCircle, FaTruck, FaEnvelope, FaHome } from 'react-icons/fa';
+import { useDeliveryLocation } from '../context/DeliveryLocationContext';
 
 export default function OrderSuccess() {
-  const orderId = 'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+  const routerLocation = useLocation();
+  const { location } = useDeliveryLocation();
+
+  const savedOrder = (() => {
+    try {
+      const raw = localStorage.getItem('lastOrder');
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  })();
+
+  const orderId =
+    routerLocation.state?.orderNumber ||
+    savedOrder?.orderNumber ||
+    'ORD-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+  const deliveryAddress =
+    routerLocation.state?.deliveryAddress ||
+    savedOrder?.deliveryAddress ||
+    location?.label ||
+    'Address not available';
+
+  const expectedDeliveryDate =
+    routerLocation.state?.expectedDeliveryDate ||
+    savedOrder?.expectedDeliveryDate ||
+    (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 5);
+      return d.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    })();
 
   return (
     <div className="min-h-screen bg-[#212121] py-8">
@@ -30,13 +65,13 @@ export default function OrderSuccess() {
               </div>
               <div className="p-4">
                 <FaTruck className="text-3xl text-emerald-500 mx-auto mb-3" />
-                <h3 className="font-medium text-white mb-1">Delivery by Dec 5</h3>
+                <h3 className="font-medium text-white mb-1">Delivery by {expectedDeliveryDate}</h3>
                 <p className="text-sm text-gray-400">Track your order anytime</p>
               </div>
               <div className="p-4">
                 <FaHome className="text-3xl text-emerald-500 mx-auto mb-3" />
                 <h3 className="font-medium text-white mb-1">Delivery Address</h3>
-                <p className="text-sm text-gray-400">Delhi, India</p>
+                <p className="text-sm text-gray-400">{deliveryAddress}</p>
               </div>
             </div>
           </div>

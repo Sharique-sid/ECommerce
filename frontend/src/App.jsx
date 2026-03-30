@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { DeliveryLocationProvider } from './context/DeliveryLocationContext';
 import ErrorBoundary from './components/ErrorBoundary';
 
 import Header from './components/Header';
@@ -60,50 +61,52 @@ function App() {
         <ScrollToTop />
         <AuthProvider>
           <CartProvider>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
-                <Route path="/orders" element={<TrackOrder />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
-                <Route path="/seller" element={<Seller />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/help" element={<FAQ />} />
-                <Route path="/support" element={<Contact />} />
-                <Route path="/shipping" element={<Shipping />} />
-                <Route path="/returns" element={<Returns />} />
-                <Route path="/track-order" element={<TrackOrder />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/cookies" element={<Cookies />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/404" element={<NotFound />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
-            <ToastContainer
-              position="bottom-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="colored"
-            />
+            <DeliveryLocationProvider>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-success" element={<OrderSuccess />} />
+                  <Route path="/orders" element={<TrackOrder />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+                  <Route path="/seller" element={<Seller />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/help" element={<FAQ />} />
+                  <Route path="/support" element={<Contact />} />
+                  <Route path="/shipping" element={<Shipping />} />
+                  <Route path="/returns" element={<Returns />} />
+                  <Route path="/track-order" element={<TrackOrder />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/cookies" element={<Cookies />} />
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/404" element={<NotFound />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+              <ToastContainer
+                position="bottom-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="colored"
+              />
+            </DeliveryLocationProvider>
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>

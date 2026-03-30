@@ -360,10 +360,18 @@ export default function Register() {
 
           {/* Social Login */}
           <div className="flex gap-3">
-            <button className="flex-1 py-3 bg-[#212121] border border-[#424242] rounded-xl flex items-center justify-center gap-2 text-gray-300 hover:bg-[#3a3a3a] transition-colors">
+            <button 
+              type="button"
+              onClick={() => toast.info('Google signup coming soon')}
+              className="flex-1 py-3 bg-[#212121] border border-[#424242] rounded-xl flex items-center justify-center gap-2 text-gray-300 hover:bg-[#3a3a3a] transition-colors"
+            >
               <FaGoogle className="text-red-500" /> Google
             </button>
-            <button className="flex-1 py-3 bg-[#212121] border border-[#424242] rounded-xl flex items-center justify-center gap-2 text-gray-300 hover:bg-[#3a3a3a] transition-colors">
+            <button 
+              type="button"
+              onClick={() => toast.info('Facebook signup coming soon')}
+              className="flex-1 py-3 bg-[#212121] border border-[#424242] rounded-xl flex items-center justify-center gap-2 text-gray-300 hover:bg-[#3a3a3a] transition-colors"
+            >
               <FaFacebook className="text-blue-500" /> Facebook
             </button>
           </div>
